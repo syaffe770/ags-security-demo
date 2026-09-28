@@ -42,12 +42,15 @@ input:focus,textarea:focus{outline:none;border-color:var(--ring);box-shadow:0 0 
 .note{margin:0;padding:10px 12px;border-radius:10px;background:var(--warn-bg);color:var(--warn);font-size:.9rem}
 fieldset{border:0;padding:0;margin:0;min-width:0}
 legend{padding:0;margin-bottom:6px}
-.choices{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.choice{display:flex;align-items:center;gap:10px;min-height:52px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;cursor:pointer;font-weight:500}
-.choice input{width:20px;height:20px;min-height:0;margin:0;accent-color:var(--brand)}
-.choice:has(input:checked){border-color:var(--brand);background:#f1f0fa}
-.choice:has(input:focus-visible){outline:3px solid var(--ring);outline-offset:2px}
-fieldset[aria-invalid=true] .choice{border-color:var(--err)}
+.guards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:6px}
+fieldset[aria-invalid=true] input{border-color:var(--err)}
+.estimate{border:1px solid var(--line);border-radius:10px;padding:14px 16px;background:#f8f8fc}
+.estimate h3{margin:0 0 8px;font-size:1rem}
+.estimate table{width:100%;border-collapse:collapse;font-size:.95rem}
+.estimate td{padding:3px 0;vertical-align:top}
+.estimate td+td{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;padding-left:12px}
+.estimate .total td{border-top:1px solid var(--line);padding-top:8px;font-weight:700}
+.estimate .hint{margin-top:8px}
 .hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
 .btn{font:inherit;font-weight:600;min-height:52px;padding:12px 20px;border-radius:10px;border:0;cursor:pointer;background:var(--brand);color:#fff;width:100%}
 .btn:hover{background:var(--brand-2)}
@@ -158,19 +161,25 @@ footer p{margin:4px 0}
         <p class="hint" id="time-hint" aria-live="polite"></p>
         <p class="note" id="urgent-note" hidden>That's soon. Please also call <a href="tel:+12035550142">(203) 555-0142</a> so we can plan right away.</p>
 
-        <fieldset id="securityType" aria-describedby="securityType-err">
-          <legend>Security type <span class="opt">(choose one or both)</span></legend>
-          <div class="choices">
-            <label class="choice"><input type="checkbox" name="securityType" value="Armed"> Armed</label>
-            <label class="choice"><input type="checkbox" name="securityType" value="Unarmed"> Unarmed</label>
+        <fieldset id="guards" aria-describedby="rates guards-err">
+          <legend>Guards needed</legend>
+          <div class="guards">
+            <div class="field">
+              <label for="armedGuards">Armed <span class="opt" data-rate="armed"></span></label>
+              <input id="armedGuards" name="armedGuards" type="number" inputmode="numeric" min="0" max="50" step="1" placeholder="0">
+            </div>
+            <div class="field">
+              <label for="unarmedGuards">Unarmed <span class="opt" data-rate="unarmed"></span></label>
+              <input id="unarmedGuards" name="unarmedGuards" type="number" inputmode="numeric" min="0" max="50" step="1" placeholder="0">
+            </div>
           </div>
-          <p class="err" id="securityType-err"></p>
+          <p class="hint" id="rates"></p>
+          <p class="err" id="guards-err"></p>
         </fieldset>
 
-        <div class="field">
-          <label for="guards">Number of guards <span class="opt">(optional)</span></label>
-          <input id="guards" name="guards" type="number" inputmode="numeric" min="1" max="50" step="1" placeholder="Not sure? Leave blank" aria-describedby="guards-err">
-          <p class="err" id="guards-err"></p>
+        <div class="estimate" aria-live="polite">
+          <h3>Estimate</h3>
+          <div id="estimate-body"></div>
         </div>
 
         <div class="field">
@@ -278,14 +287,40 @@ var AGS = (function () {
     need('startTime', 'Choose a start time.');
     need('endTime', 'Choose an end time.');
     if (!e.startTime && !e.endTime && parseTime(d.startTime) === parseTime(d.endTime)) e.endTime = 'End time must differ from start time.';
-    if (!d.securityType || !d.securityType.length) e.securityType = 'Choose armed, unarmed, or both.';
-    var g = String(d.guards || '').trim();
-    if (g && !(/^\d+$/.test(g) && +g >= 1 && +g <= 50)) e.guards = 'Enter a whole number from 1 to 50.';
+    var a = count(d.armedGuards), u = count(d.unarmedGuards);
+    if (isNaN(a) || isNaN(u) || a > 50 || u > 50) e.guards = 'Enter whole numbers from 0 to 50.';
+    else if (a + u < 1) e.guards = 'Enter at least one guard.';
     return e;
   }
 
+  // ---- Pricing (keep in sync with RATE_* / MIN_HOURS in apps-script/Code.gs) ----
+  var RATES = { armed: 65, unarmed: 45 }, MIN_HOURS = 4;
+
+  function count(v) {
+    v = String(v == null ? '' : v).trim();
+    return v === '' ? 0 : /^\d+$/.test(v) ? +v : NaN;
+  }
+  function money(n) { return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+  function guardsLabel(armed, unarmed) {
+    var a = count(armed) || 0, u = count(unarmed) || 0, parts = [];
+    if (a) parts.push(a + ' armed');
+    if (u) parts.push(u + ' unarmed');
+    return parts.join(', ');
+  }
+  // Per guard, per hour, with a minimum number of billed hours. Null until there's enough to price.
+  function estimate(armed, unarmed, start, end) {
+    var a = count(armed), u = count(unarmed), s = parseTime(start), e = parseTime(end);
+    if (!(a >= 0 && u >= 0) || a + u < 1 || s === null || e === null || s === e) return null;
+    var hours = hoursBetween(start, end), billed = Math.max(hours, MIN_HOURS), lines = [];
+    if (a) lines.push({ label: 'armed', qty: a, rate: RATES.armed, hours: billed, amount: a * RATES.armed * billed });
+    if (u) lines.push({ label: 'unarmed', qty: u, rate: RATES.unarmed, hours: billed, amount: u * RATES.unarmed * billed });
+    var total = Math.round(lines.reduce(function (sum, l) { return sum + l.amount; }, 0) * 100) / 100;
+    return { hours: hours, billedHours: billed, minApplied: hours < MIN_HOURS, lines: lines, total: total };
+  }
+
   return { validate: validate, localDateISO: localDateISO, isOvernight: isOvernight, hoursBetween: hoursBetween,
-    formatTime: formatTime, formatDate: formatDate, formatHours: formatHours, isUrgent: isUrgent };
+    formatTime: formatTime, formatDate: formatDate, formatHours: formatHours, isUrgent: isUrgent,
+    RATES: RATES, MIN_HOURS: MIN_HOURS, estimate: estimate, money: money, guardsLabel: guardsLabel };
 })();
 </script>
 
@@ -294,19 +329,25 @@ var AGS = (function () {
   // Paste the Apps Script web app URL (ends in /exec) here after deploying. Until then the page runs in demo mode.
   var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxekUM09EuCM6ZPXCBjR_JBYpNBRlzRPV7APaXpqHKaWA35ljsh9fC1UdTU_OMyQH_a/exec';
   var TIMEOUT_MS = 20000;
-  var FIELDS = ['email', 'phone', 'organization', 'contact', 'location', 'eventDate', 'startTime', 'endTime', 'securityType', 'guards'];
+  var FIELDS = ['email', 'phone', 'organization', 'contact', 'location', 'eventDate', 'startTime', 'endTime', 'guards'];
+  var SENT = ['email', 'phone', 'organization', 'contact', 'location', 'eventDate', 'startTime', 'endTime',
+    'armedGuards', 'unarmedGuards', 'details', 'requestId'];
 
   var $ = function (id) { return document.getElementById(id); };
   var form = $('form'), card = $('request'), success = $('success');
   var lastPayload = null;
 
   $('eventDate').min = AGS.localDateISO(new Date());
+  document.querySelectorAll('[data-rate]').forEach(function (el) {
+    el.textContent = '(' + AGS.money(AGS.RATES[el.getAttribute('data-rate')]).replace('.00', '') + '/hr)';
+  });
+  $('rates').textContent = 'Price is per guard, per hour, with a ' + AGS.MIN_HOURS + '-hour minimum.';
 
   function readForm() {
     var f = new FormData(form), d = {};
-    ['email', 'phone', 'organization', 'contact', 'location', 'eventDate', 'startTime', 'endTime', 'guards', 'details', 'website']
+    ['email', 'phone', 'organization', 'contact', 'location', 'eventDate', 'startTime', 'endTime',
+      'armedGuards', 'unarmedGuards', 'details', 'website']
       .forEach(function (k) { d[k] = String(f.get(k) || '').trim(); });
-    d.securityType = f.getAll('securityType');
     return d;
   }
 
@@ -322,23 +363,37 @@ var AGS = (function () {
     box.textContent = n === 1 ? 'Please fix the highlighted field.' : 'Please fix the ' + n + ' highlighted fields.';
   }
 
+  // Built from numbers only (no user text), so innerHTML is safe here.
+  function renderEstimate(d) {
+    var est = AGS.estimate(d.armedGuards, d.unarmedGuards, d.startTime, d.endTime);
+    if (!est) {
+      $('estimate-body').innerHTML = '<p class="hint">Add guards and times to see an estimate.</p>';
+      return;
+    }
+    var rows = est.lines.map(function (l) {
+      return '<tr><td>' + l.qty + ' ' + l.label + ' × ' + AGS.money(l.rate) + '/hr × ' + l.hours + ' hrs</td><td>' +
+        AGS.money(l.amount) + '</td></tr>';
+    }).join('');
+    $('estimate-body').innerHTML = '<table>' + rows + '<tr class="total"><td>Estimated total</td><td>' +
+      AGS.money(est.total) + '</td></tr></table><p class="hint">' +
+      (est.minApplied ? AGS.MIN_HOURS + '-hour minimum applied. ' : '') + 'Final price confirmed by AGS.</p>';
+  }
+
   function updateHints() {
     var d = readForm();
     $('time-hint').textContent = AGS.isOvernight(d.startTime, d.endTime) ? 'Overnight shift: ends the next day.' : '';
     $('urgent-note').hidden = !(d.eventDate && AGS.isUrgent(d.eventDate, d.startTime, new Date()));
+    renderEstimate(d);
   }
 
   // Re-check a field once it has been flagged, so errors clear as soon as they're fixed.
   form.addEventListener('input', function (ev) {
     updateHints();
-    var k = ev.target.name;
+    var k = /Guards$/.test(ev.target.name) ? 'guards' : ev.target.name;
     if (FIELDS.indexOf(k) < 0) return;
-    var el = $(k);
-    if (el.getAttribute('aria-invalid') === 'true' || (k === 'endTime' || k === 'startTime')) {
-      var errs = AGS.validate(readForm(), new Date());
-      if (el.getAttribute('aria-invalid') === 'true') setError(k, errs[k]);
-      if (k === 'startTime' && $('endTime').getAttribute('aria-invalid') === 'true') setError('endTime', errs.endTime);
-    }
+    var errs = AGS.validate(readForm(), new Date());
+    if ($(k).getAttribute('aria-invalid') === 'true') setError(k, errs[k]);
+    if (k === 'startTime' && $('endTime').getAttribute('aria-invalid') === 'true') setError('endTime', errs.endTime);
   });
 
   form.addEventListener('submit', function (ev) {
@@ -349,8 +404,7 @@ var AGS = (function () {
     showErrors(errs);
     var first = FIELDS.filter(function (k) { return errs[k]; })[0];
     if (first) {
-      var el = first === 'securityType' ? form.querySelector('[name=securityType]') : $(first);
-      el.focus();
+      $(first === 'guards' ? 'armedGuards' : first).focus();
       return;
     }
     d.requestId = window.crypto && crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
@@ -359,13 +413,14 @@ var AGS = (function () {
   });
 
   function showSuccess(d) {
+    var est = AGS.estimate(d.armedGuards, d.unarmedGuards, d.startTime, d.endTime);
     var rows = [
       ['Organization', d.organization],
       ['Contact', d.contact],
       ['When', AGS.formatHours(d.eventDate, d.startTime, d.endTime)],
       ['Where', d.location],
-      ['Security', d.securityType.join(', ')],
-      ['Guards', d.guards || 'Not sure yet']
+      ['Guards', AGS.guardsLabel(d.armedGuards, d.unarmedGuards)],
+      ['Estimate', est ? AGS.money(est.total) : '']
     ];
     var dl = $('summary');
     dl.textContent = '';
@@ -397,9 +452,7 @@ var AGS = (function () {
     setStatus('sending');
     if (!/^https:\/\//.test(SCRIPT_URL)) { setStatus('demo'); return; }
     var body = new URLSearchParams();
-    ['email', 'phone', 'organization', 'contact', 'location', 'eventDate', 'startTime', 'endTime', 'guards', 'details', 'requestId']
-      .forEach(function (k) { body.append(k, d[k] || ''); });
-    body.append('securityType', d.securityType.join(', '));
+    SENT.forEach(function (k) { body.append(k, d[k] || ''); });
     var ctrl = new AbortController();
     var timer = setTimeout(function () { ctrl.abort(); }, TIMEOUT_MS);
     fetch(SCRIPT_URL, { method: 'POST', body: body, signal: ctrl.signal })
@@ -421,6 +474,8 @@ var AGS = (function () {
     window.scrollTo(0, 0);
     $('email').focus();
   });
+
+  updateHints();
 })();
 </script>
 </body>

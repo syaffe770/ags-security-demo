@@ -19,13 +19,13 @@ function isoOffset(days) {
 
 function validForm() {
   return { email: 'a@b.co', phone: '(203) 555-0142', organization: 'Org', contact: 'Rabbi X', location: '1 Main St',
-    eventDate: '2026-10-12', startTime: '18:00', endTime: '23:00', securityType: ['Armed'], guards: '', details: '' };
+    eventDate: '2026-10-12', startTime: '18:00', endTime: '23:00', armedGuards: '1', unarmedGuards: '', details: '' };
 }
 
 function validPost(extra) {
   return Object.assign({ email: 'req@example.com', phone: '203-555-0142', organization: 'Org', contact: 'Rabbi X',
     location: '1 Main St', eventDate: isoOffset(10), startTime: '18:00', endTime: '23:00',
-    securityType: 'Armed, Unarmed', guards: '2', details: 'hi', requestId: 'r-' + Math.random() }, extra || {});
+    armedGuards: '1', unarmedGuards: '1', details: 'hi', requestId: 'r-' + Math.random() }, extra || {});
 }
 
 // Fake Apps Script services, recording what the script does.
@@ -36,7 +36,9 @@ function makeServer(gs, opts) {
     getLastColumn: function () { return env.rows[0] ? env.rows[0].length : 0; },
     getLastRow: function () { return env.rows.length; },
     getRange: function (r, c, nr, nc) {
+      nr = nr || 1; nc = nc || 1;
       return {
+        setValue: function (v) { env.rows[r - 1][c - 1] = v; return this; },
         getValues: function () {
           var out = [];
           for (var i = 0; i < nr; i++) out.push((env.rows[r - 1 + i] || []).slice(c - 1, c - 1 + nc));
@@ -57,7 +59,7 @@ function makeServer(gs, opts) {
       sendEmail: function (o) { if (opts.mailThrows) throw new Error('quota'); env.sent.push(o); }
     },
     LockService: { getScriptLock: function () {
-      return { tryLock: function () { return opts.lock !== false; }, releaseLock: function () {} };
+      return { tryLock: function () { return opts.lock !== false; }, waitLock: function () {}, releaseLock: function () {} };
     } },
     CacheService: { getScriptCache: function () {
       return { get: function (k) { return env.cache[k] || null; }, put: function (k, v) { env.cache[k] = v; } };
@@ -66,7 +68,12 @@ function makeServer(gs, opts) {
       return { getProperty: function (k) { return env.props[k] == null ? null : env.props[k]; },
         setProperty: function (k, v) { env.props[k] = v; } };
     } },
-    Utilities: { formatDate: function (d) { return isoOffset((d - Date.now()) / 86400000); } },
+    Utilities: {
+      formatDate: function (d) { return isoOffset((d - Date.now()) / 86400000); },
+      newBlob: function (html) {
+        return { getAs: function () { return { html: html, setName: function (n) { this.name = n; return this; } }; } };
+      }
+    },
     ContentService: { createTextOutput: function (s) { return { getContent: function () { return s; } }; } },
     Session: { getEffectiveUser: function () { return { getEmail: function () { return 'deployer@example.com'; } }; } },
     Sheets: undefined,
@@ -75,9 +82,11 @@ function makeServer(gs, opts) {
   var names = Object.keys(services);
   var api = new Function(names.join(','), gs +
     '\nreturn {doPost:doPost, cleanInput_:cleanInput_, validateRequest_:validateRequest_, safeCell_:safeCell_,' +
-    ' buildRecord_:buildRecord_, isUrgent_:isUrgent_, HEADERS:HEADERS, ownerEmail_:ownerEmail_};')
+    ' buildRecord_:buildRecord_, isUrgent_:isUrgent_, HEADERS:HEADERS, ownerEmail_:ownerEmail_,' +
+    ' buildInvoice_:buildInvoice_, sendInvoiceForRow_:sendInvoiceForRow_, readRecord_:readRecord_};')
     .apply(null, names.map(function (n) { return services[n]; }));
   env.api = api;
+  env.sheet = sheet;
   env.post = function (params) { return api.doPost({ parameter: params }).getContent(); };
   env.record = function (i) {
     var h = env.rows[0], r = env.rows[i], o = {};
@@ -97,8 +106,8 @@ function makeServer(gs, opts) {
   test('valid form has no errors', function () { eq(AGS.validate(validForm(), now), {}); });
 
   test('empty form flags every required field', function () {
-    eq(Object.keys(AGS.validate({ securityType: [] }, now)).sort(),
-      ['contact', 'email', 'endTime', 'eventDate', 'location', 'organization', 'phone', 'securityType', 'startTime']);
+    eq(Object.keys(AGS.validate({}, now)).sort(),
+      ['contact', 'email', 'endTime', 'eventDate', 'guards', 'location', 'organization', 'phone', 'startTime']);
   });
 
   test('bad email and short phone are rejected', function () {
@@ -126,14 +135,29 @@ function makeServer(gs, opts) {
     ok(AGS.validate(Object.assign(validForm(), { startTime: '18:00', endTime: '18:00' }), now).endTime);
   });
 
-  test('security type is required', function () {
-    ok(AGS.validate(Object.assign(validForm(), { securityType: [] }), now).securityType);
+  test('guards: at least one, whole numbers 0-50', function () {
+    ok(AGS.validate(Object.assign(validForm(), { armedGuards: '', unarmedGuards: '' }), now).guards);
+    ok(AGS.validate(Object.assign(validForm(), { armedGuards: '0', unarmedGuards: '0' }), now).guards);
+    ok(AGS.validate(Object.assign(validForm(), { armedGuards: '1.5' }), now).guards);
+    ok(AGS.validate(Object.assign(validForm(), { armedGuards: '51' }), now).guards);
+    eq(AGS.validate(Object.assign(validForm(), { armedGuards: '', unarmedGuards: '3' }), now), {});
   });
 
-  test('guards must be a whole number 1-50 when given', function () {
-    ok(AGS.validate(Object.assign(validForm(), { guards: '0' }), now).guards);
-    ok(AGS.validate(Object.assign(validForm(), { guards: '2.5' }), now).guards);
-    eq(AGS.validate(Object.assign(validForm(), { guards: '3' }), now), {});
+  test('estimate: $65 armed, $45 unarmed, per guard per hour', function () {
+    var e = AGS.estimate('1', '1', '18:00', '23:00');
+    eq(e.total, 550); eq(e.billedHours, 5); ok(!e.minApplied);
+    eq(AGS.estimate('2', '', '19:00', '22:00').total, 520, '4-hour minimum');
+    ok(AGS.estimate('2', '', '19:00', '22:00').minApplied);
+    eq(AGS.estimate('', '2', '17:00', '00:30').total, 675, 'overnight 7.5h');
+    eq(AGS.estimate('', '', '18:00', '23:00'), null);
+    eq(AGS.estimate('1', '', '', '23:00'), null);
+  });
+
+  test('money and guard labels', function () {
+    eq(AGS.money(1234.5), '$1,234.50');
+    eq(AGS.money(45), '$45.00');
+    eq(AGS.guardsLabel('2', '1'), '2 armed, 1 unarmed');
+    eq(AGS.guardsLabel('', '3'), '3 unarmed');
   });
 
   test('urgency is within 48 hours of start', function () {
@@ -160,7 +184,9 @@ function makeServer(gs, opts) {
     eq(s.rows[0], s.api.HEADERS);
     eq(s.rows.length, 2);
     var r = s.record(1);
-    eq(r['Status'], 'New'); eq(r['Security Type'], 'Armed, Unarmed'); eq(r['Est. Hours'], 5); eq(r['Guards'], 2);
+    eq(r['Status'], 'New'); eq(r['Hours'], 5); eq(r['Armed Guards'], 1); eq(r['Unarmed Guards'], 1);
+    eq(r['Estimate $'], 550);
+    ok(s.sent[1].htmlBody.indexOf('$550.00') >= 0, 'estimate in confirmation email');
     eq(s.sent.length, 2);
     eq(s.sent[0].to, 'owner@example.com'); eq(s.sent[0].replyTo, 'req@example.com');
     eq(s.sent[1].to, 'req@example.com');
@@ -189,7 +215,8 @@ function makeServer(gs, opts) {
   test('invalid request is dropped', function () {
     var s = makeServer(gs);
     eq(s.post(validPost({ email: 'bad' })), 'invalid');
-    eq(s.post(validPost({ securityType: 'Ninja' })), 'invalid');
+    eq(s.post(validPost({ armedGuards: '0', unarmedGuards: '' })), 'invalid');
+    eq(s.post(validPost({ armedGuards: 'lots' })), 'invalid');
     eq(s.rows.length, 0);
   });
 
@@ -248,7 +275,73 @@ function makeServer(gs, opts) {
   test('overnight end is labeled next day', function () {
     var s = makeServer(gs);
     s.post(validPost({ startTime: '22:00', endTime: '02:00' }));
-    eq(s.record(1)['End'], '2:00 AM (next day)'); eq(s.record(1)['Est. Hours'], 4);
+    eq(s.record(1)['End'], '2:00 AM (next day)'); eq(s.record(1)['Hours'], 4);
+  });
+
+  test('browser estimate matches the sheet estimate', function () {
+    [['2', '', '19:00', '22:00'], ['1', '3', '22:00', '06:00'], ['', '1', '07:30', '15:45']].forEach(function (c) {
+      var s = makeServer(gs);
+      s.post(validPost({ armedGuards: c[0], unarmedGuards: c[1], startTime: c[2], endTime: c[3] }));
+      eq(s.record(1)['Estimate $'], AGS.estimate(c[0], c[1], c[2], c[3]).total, c.join(' '));
+    });
+  });
+
+  // ---- Invoices ----
+  function invoicedServer() {
+    var s = makeServer(gs);
+    s.post(validPost({ armedGuards: '2', unarmedGuards: '', startTime: '19:00', endTime: '22:00' }));
+    s.sent.length = 0;
+    return s;
+  }
+
+  test('invoice: priced from the row, emailed with PDF, row marked Invoiced', function () {
+    var s = invoicedServer();
+    var inv = s.api.sendInvoiceForRow_(s.sheet, 2, new Date());
+    eq(inv.total, 520);
+    ok(/^AGS-\d{4}-0001$/.test(inv.number), inv.number);
+    eq(s.sent.length, 1);
+    var m = s.sent[0];
+    eq(m.to, 'req@example.com'); eq(m.bcc, 'owner@example.com');
+    ok(m.subject.indexOf(inv.number) >= 0);
+    eq(m.attachments[0].name, 'Invoice ' + inv.number + '.pdf');
+    ok(m.attachments[0].html.indexOf('$520.00') >= 0, 'total in PDF');
+    ok(m.attachments[0].html.indexOf('4-hour minimum') >= 0, 'minimum noted');
+    var r = s.record(1);
+    eq(r['Status'], 'Invoiced'); eq(r['Invoice #'], inv.number); eq(r['Invoice Total'], 520);
+  });
+
+  test('invoice uses corrected hours; numbers increase; resend keeps number', function () {
+    var s = invoicedServer();
+    s.post(validPost({ email: 'second@example.com' }));
+    var hoursCol = s.rows[0].indexOf('Hours');
+    s.rows[1][hoursCol] = 6; // owner corrects to actual hours worked
+    var first = s.api.sendInvoiceForRow_(s.sheet, 2, new Date());
+    eq(first.total, 780);
+    var second = s.api.sendInvoiceForRow_(s.sheet, 3, new Date());
+    ok(/-0002$/.test(second.number), second.number);
+    eq(s.api.sendInvoiceForRow_(s.sheet, 2, new Date()).number, first.number);
+  });
+
+  test('invoice refuses rows without guards or hours', function () {
+    var s = invoicedServer();
+    var col = function (h) { return s.rows[0].indexOf(h); };
+    s.rows[1][col('Armed Guards')] = 0;
+    var threw = false;
+    try { s.api.sendInvoiceForRow_(s.sheet, 2, new Date()); } catch (e) { threw = /guard/.test(e.message); }
+    ok(threw, 'no guards');
+    s.rows[1][col('Armed Guards')] = 2; s.rows[1][col('Hours')] = '';
+    threw = false;
+    try { s.api.sendInvoiceForRow_(s.sheet, 2, new Date()); } catch (e) { threw = /Hours/.test(e.message); }
+    ok(threw, 'no hours');
+    eq(s.sent.length, 0);
+  });
+
+  test('invoice PDF escapes sheet text', function () {
+    var s = makeServer(gs);
+    s.post(validPost({ organization: '<b>Evil</b> Org' }));
+    s.sent.length = 0;
+    s.api.sendInvoiceForRow_(s.sheet, 2, new Date());
+    ok(s.sent[0].attachments[0].html.indexOf('<b>Evil</b>') < 0);
   });
 
   // ---- Page budget ----
