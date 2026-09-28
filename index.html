@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Request licensed armed or unarmed security for synagogues, schools, and events across Connecticut.">
+<meta name="theme-color" content="#1e1b3a">
+<title>Request Security | AGS – Advanced Guard Services</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='16' fill='%231e1b3a'/%3E%3Cpath d='M16 5l8 3.2v6.6c0 5.4-3.5 9-8 11.2-4.5-2.2-8-5.8-8-11.2V8.2z' fill='%23fff'/%3E%3C/svg%3E">
+<style>
+:root{--brand:#1e1b3a;--brand-2:#2e2a57;--ring:#6366f1;--bg:#f9fafb;--card:#fff;--text:#111827;--muted:#4b5563;--line:#d1d5db;--err:#b91c1c;--err-bg:#fef2f2;--ok:#15803d;--warn-bg:#fffbeb;--warn:#92400e;--radius:14px}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+a{color:var(--brand-2)}
+:focus-visible{outline:3px solid var(--ring);outline-offset:2px}
+.wrap{max-width:680px;margin:0 auto;padding:0 16px}
+header{background:var(--brand);color:#fff;padding:24px 0 72px}
+.brand{display:flex;gap:14px;align-items:center}
+.brand svg{flex:none}
+.brand h1{margin:0;font-size:1.25rem;line-height:1.2}
+.tagline{margin:14px 0 0;color:#d6d4ec;max-width:36em}
+.call{display:inline-flex;align-items:center;gap:8px;margin-top:16px;min-height:44px;padding:10px 16px;border-radius:999px;background:#fff;color:var(--brand);font-weight:600;text-decoration:none}
+.call:hover{background:#eceaf8}
+main{margin-top:-48px;padding-bottom:32px}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:0 1px 3px rgba(0,0,0,.08),0 8px 24px rgba(30,27,58,.08);padding:24px}
+.card h2{margin:0 0 4px;font-size:1.35rem}
+.lede{margin:0 0 20px;color:var(--muted)}
+.grid{display:grid;gap:16px}
+@media(min-width:600px){.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1.4fr 1fr 1fr}.card{padding:32px}}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+label,legend{font-weight:600;font-size:.95rem}
+.opt{font-weight:400;color:var(--muted)}
+input,textarea{font:inherit;color:inherit;width:100%;min-height:48px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff}
+textarea{min-height:110px;resize:vertical}
+input:focus,textarea:focus{outline:none;border-color:var(--ring);box-shadow:0 0 0 3px rgba(99,102,241,.3)}
+[aria-invalid=true]{border-color:var(--err)}
+.hint{margin:0;font-size:.875rem;color:var(--muted)}
+.err{margin:0;font-size:.875rem;color:var(--err);font-weight:500}
+.err:empty,.hint:empty{display:none}
+.note{margin:0;padding:10px 12px;border-radius:10px;background:var(--warn-bg);color:var(--warn);font-size:.9rem}
+fieldset{border:0;padding:0;margin:0;min-width:0}
+legend{padding:0;margin-bottom:6px}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.choice{display:flex;align-items:center;gap:10px;min-height:52px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;cursor:pointer;font-weight:500}
+.choice input{width:20px;height:20px;min-height:0;margin:0;accent-color:var(--brand)}
+.choice:has(input:checked){border-color:var(--brand);background:#f1f0fa}
+.choice:has(input:focus-visible){outline:3px solid var(--ring);outline-offset:2px}
+fieldset[aria-invalid=true] .choice{border-color:var(--err)}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.btn{font:inherit;font-weight:600;min-height:52px;padding:12px 20px;border-radius:10px;border:0;cursor:pointer;background:var(--brand);color:#fff;width:100%}
+.btn:hover{background:var(--brand-2)}
+.btn.ghost{background:#fff;color:var(--brand);border:1px solid var(--brand)}
+.btn.ghost:hover{background:#f1f0fa}
+.summary-err{padding:12px 14px;border-radius:10px;background:var(--err-bg);color:var(--err);font-weight:600;margin-bottom:16px}
+.actions{margin-top:24px}
+.fine{margin:12px 0 0;font-size:.85rem;color:var(--muted);text-align:center}
+#success{text-align:center}
+#success h2{outline:none}
+.check{display:block;margin:4px auto 16px}
+.check circle{stroke:var(--ok);stroke-width:3;fill:none;stroke-dasharray:166;stroke-dashoffset:166;animation:draw .5s ease-out forwards}
+.check path{stroke:var(--ok);stroke-width:4;fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:48;stroke-dashoffset:48;animation:draw .35s .4s ease-out forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+@media(prefers-reduced-motion:reduce){.check circle,.check path{animation:none;stroke-dashoffset:0}}
+.status{margin:0 0 16px;font-size:.9rem;color:var(--muted)}
+.status.ok{color:var(--ok);font-weight:600}
+.failed{margin:0 0 16px;padding:14px;border-radius:10px;background:var(--err-bg);color:var(--err);text-align:left}
+.failed p{margin:0 0 10px}
+.failed .btn{width:auto;min-height:44px;padding:8px 16px;background:var(--err)}
+dl{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;text-align:left;margin:0 0 20px;padding:16px;border-radius:10px;background:var(--bg)}
+dt{color:var(--muted)}
+dd{margin:0;font-weight:500;overflow-wrap:anywhere}
+.contact{color:var(--muted);margin:0 0 20px}
+footer{padding:8px 0 32px;text-align:center;font-size:.85rem;color:var(--muted)}
+footer p{margin:4px 0}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="brand">
+      <svg width="56" height="56" viewBox="0 0 56 56" aria-hidden="true">
+        <circle cx="28" cy="28" r="27" fill="#2e2a57" stroke="#fff" stroke-opacity=".35" stroke-width="2"/>
+        <path d="M28 8l11 4.5V22c0 7.5-5 12-11 14.5C22 34 17 29.5 17 22v-9.5z" fill="#fff"/>
+        <path d="M23 22.5l3.5 3.5 6.5-7" fill="none" stroke="#1e1b3a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="28" y="48" text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" font-weight="700" letter-spacing="1.5" fill="#fff">AGS</text>
+      </svg>
+      <h1>AGS – Advanced Guard Services</h1>
+    </div>
+    <p class="tagline">Licensed armed and unarmed security for synagogues, schools, and events across Connecticut.</p>
+    <a class="call" href="tel:+12035550142">
+      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6.6 10.8a15.1 15.1 0 006.6 6.6l2.2-2.2a1 1 0 011-.25 11.4 11.4 0 003.6.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.57a1 1 0 01-.25 1z"/></svg>
+      Urgent? Call (203) 555-0142
+    </a>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="card" id="request" aria-labelledby="form-title">
+    <h2 id="form-title">Request security coverage</h2>
+    <p class="lede">Tell us about your event. We'll confirm availability and pricing within 24 hours.</p>
+
+    <div id="form-errors" class="summary-err" role="alert" hidden></div>
+
+    <form id="form" novalidate>
+      <div class="grid">
+        <div class="grid g2">
+          <div class="field">
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" autocomplete="email" required maxlength="200" aria-describedby="email-err">
+            <p class="err" id="email-err"></p>
+          </div>
+          <div class="field">
+            <label for="phone">Phone</label>
+            <input id="phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" required maxlength="40" aria-describedby="phone-err">
+            <p class="err" id="phone-err"></p>
+          </div>
+        </div>
+
+        <div class="grid g2">
+          <div class="field">
+            <label for="organization">Organization</label>
+            <input id="organization" name="organization" autocomplete="organization" required maxlength="200" aria-describedby="organization-err">
+            <p class="err" id="organization-err"></p>
+          </div>
+          <div class="field">
+            <label for="contact">Point of contact</label>
+            <input id="contact" name="contact" autocomplete="name" required maxlength="200" placeholder="e.g. Rabbi, administrator" aria-describedby="contact-err">
+            <p class="err" id="contact-err"></p>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="location">Location</label>
+          <input id="location" name="location" autocomplete="street-address" required maxlength="500" placeholder="Street address, town" aria-describedby="location-err">
+          <p class="err" id="location-err"></p>
+        </div>
+
+        <div class="grid g3">
+          <div class="field">
+            <label for="eventDate">Date needed</label>
+            <input id="eventDate" name="eventDate" type="date" required aria-describedby="eventDate-err">
+            <p class="err" id="eventDate-err"></p>
+          </div>
+          <div class="field">
+            <label for="startTime">Start <span class="opt">(Eastern)</span></label>
+            <input id="startTime" name="startTime" type="time" step="900" required aria-describedby="startTime-err time-hint">
+            <p class="err" id="startTime-err"></p>
+          </div>
+          <div class="field">
+            <label for="endTime">End <span class="opt">(Eastern)</span></label>
+            <input id="endTime" name="endTime" type="time" step="900" required aria-describedby="endTime-err time-hint">
+            <p class="err" id="endTime-err"></p>
+          </div>
+        </div>
+        <p class="hint" id="time-hint" aria-live="polite"></p>
+        <p class="note" id="urgent-note" hidden>That's soon. Please also call <a href="tel:+12035550142">(203) 555-0142</a> so we can plan right away.</p>
+
+        <fieldset id="securityType" aria-describedby="securityType-err">
+          <legend>Security type <span class="opt">(choose one or both)</span></legend>
+          <div class="choices">
+            <label class="choice"><input type="checkbox" name="securityType" value="Armed"> Armed</label>
+            <label class="choice"><input type="checkbox" name="securityType" value="Unarmed"> Unarmed</label>
+          </div>
+          <p class="err" id="securityType-err"></p>
+        </fieldset>
+
+        <div class="field">
+          <label for="guards">Number of guards <span class="opt">(optional)</span></label>
+          <input id="guards" name="guards" type="number" inputmode="numeric" min="1" max="50" step="1" placeholder="Not sure? Leave blank" aria-describedby="guards-err">
+          <p class="err" id="guards-err"></p>
+        </div>
+
+        <div class="field">
+          <label for="details">Details <span class="opt">(optional)</span></label>
+          <textarea id="details" name="details" maxlength="2000" placeholder="Expected attendance, entrances, special concerns…"></textarea>
+        </div>
+
+        <div class="hp" aria-hidden="true">
+          <label for="website">Website</label>
+          <input id="website" name="website" tabindex="-1" autocomplete="off">
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn" type="submit">Send request</button>
+        <p class="fine">We only use this information to respond to your request.</p>
+      </div>
+    </form>
+  </section>
+
+  <section class="card" id="success" hidden aria-labelledby="success-title">
+    <svg class="check" width="72" height="72" viewBox="0 0 56 56" aria-hidden="true"><circle cx="28" cy="28" r="26"/><path d="M17 29l7 7 15-16"/></svg>
+    <h2 id="success-title" tabindex="-1">Thanks! We'll confirm within 24 hours.</h2>
+    <p class="status" id="send-status" role="status"></p>
+    <div class="failed" id="send-failed" hidden>
+      <p>We may not have received this request. Please call <a href="tel:+12035550142">(203) 555-0142</a>, or try sending it again.</p>
+      <button class="btn" type="button" id="retry">Try again</button>
+    </div>
+    <dl id="summary"></dl>
+    <p class="contact">Need us sooner? Call <a href="tel:+12035550142">(203) 555-0142</a> or email <a href="mailto:requests@ags-security.example">requests@ags-security.example</a>.</p>
+    <button class="btn ghost" type="button" id="another">Submit another request</button>
+  </section>
+</main>
+
+<footer class="wrap">
+  <p>AGS – Advanced Guard Services · (203) 555-0142 · requests@ags-security.example</p>
+  <p>Demo site. Not a real company.</p>
+</footer>
+
+<noscript><p class="wrap" style="text-align:center">This form needs JavaScript. Please call (203) 555-0142 or email requests@ags-security.example.</p></noscript>
+
+<script id="logic">
+// Pure helpers (no DOM) so tests/ can load and check them.
+var AGS = (function () {
+  var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function localDateISO(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function parseDate(s) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || '');
+    if (!m) return null;
+    var d = new Date(+m[1], +m[2] - 1, +m[3]);
+    return d.getMonth() === +m[2] - 1 ? d : null;
+  }
+  function parseTime(s) {
+    var m = /^(\d{2}):(\d{2})/.exec(s || '');
+    return m && +m[1] < 24 && +m[2] < 60 ? +m[1] * 60 + +m[2] : null;
+  }
+  function isOvernight(start, end) {
+    var s = parseTime(start), e = parseTime(end);
+    return s !== null && e !== null && e < s;
+  }
+  function hoursBetween(start, end) {
+    var diff = parseTime(end) - parseTime(start);
+    if (diff <= 0) diff += 1440;
+    return Math.round(diff / 60 * 100) / 100;
+  }
+  function formatTime(s) {
+    var t = parseTime(s);
+    if (t === null) return '';
+    var h = Math.floor(t / 60), m = t % 60;
+    return ((h + 11) % 12 + 1) + ':' + pad(m) + ' ' + (h < 12 ? 'AM' : 'PM');
+  }
+  function formatDate(s) {
+    var d = parseDate(s);
+    return d ? DAYS[d.getDay()] + ', ' + MONTHS[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear() : '';
+  }
+  function formatHours(date, start, end) {
+    return formatDate(date) + ', ' + formatTime(start) + ' – ' + formatTime(end) + (isOvernight(start, end) ? ' (next day)' : '');
+  }
+  function isUrgent(date, start, now) {
+    var d = parseDate(date), t = parseTime(start);
+    if (!d) return false;
+    d.setMinutes(t === null ? 0 : t);
+    return d - now < 48 * 3600 * 1000;
+  }
+
+  function validate(d, now) {
+    var e = {};
+    function need(k, msg) { if (!String(d[k] || '').trim()) e[k] = msg; }
+    need('email', 'Enter your email.');
+    if (!e.email && !EMAIL_RE.test(d.email.trim())) e.email = 'Enter a valid email, like name@example.com.';
+    need('phone', 'Enter a phone number.');
+    if (!e.phone && d.phone.replace(/\D/g, '').length < 10) e.phone = 'Enter a phone number with area code.';
+    need('organization', 'Enter your organization.');
+    need('contact', 'Enter a point of contact.');
+    need('location', 'Enter the address.');
+    need('eventDate', 'Choose a date.');
+    if (!e.eventDate) {
+      if (!parseDate(d.eventDate)) e.eventDate = 'Enter a valid date.';
+      else if (d.eventDate < localDateISO(now)) e.eventDate = "Date can't be in the past.";
+    }
+    need('startTime', 'Choose a start time.');
+    need('endTime', 'Choose an end time.');
+    if (!e.startTime && !e.endTime && parseTime(d.startTime) === parseTime(d.endTime)) e.endTime = 'End time must differ from start time.';
+    if (!d.securityType || !d.securityType.length) e.securityType = 'Choose armed, unarmed, or both.';
+    var g = String(d.guards || '').trim();
+    if (g && !(/^\d+$/.test(g) && +g >= 1 && +g <= 50)) e.guards = 'Enter a whole number from 1 to 50.';
+    return e;
+  }
+
+  return { validate: validate, localDateISO: localDateISO, isOvernight: isOvernight, hoursBetween: hoursBetween,
+    formatTime: formatTime, formatDate: formatDate, formatHours: formatHours, isUrgent: isUrgent };
+})();
+</script>
+
+<script>
+(function () {
+  // Paste the Apps Script web app URL (ends in /exec) here after deploying. Until then the page runs in demo mode.
+  var SCRIPT_URL = 'PASTE_WEB_APP_URL_HERE';
+  var TIMEOUT_MS = 20000;
+  var FIELDS = ['email', 'phone', 'organization', 'contact', 'location', 'eventDate', 'startTime', 'endTime', 'securityType', 'guards'];
+
+  var $ = function (id) { return document.getElementById(id); };
+  var form = $('form'), card = $('request'), success = $('success');
+  var lastPayload = null;
+
+  $('eventDate').min = AGS.localDateISO(new Date());
+
+  function readForm() {
+    var f = new FormData(form), d = {};
+    ['email', 'phone', 'organization', 'contact', 'location', 'eventDate', 'startTime', 'endTime', 'guards', 'details', 'website']
+      .forEach(function (k) { d[k] = String(f.get(k) || '').trim(); });
+    d.securityType = f.getAll('securityType');
+    return d;
+  }
+
+  function setError(k, msg) {
+    $(k + '-err').textContent = msg || '';
+    $(k).setAttribute('aria-invalid', msg ? 'true' : 'false');
+  }
+
+  function showErrors(errs) {
+    FIELDS.forEach(function (k) { setError(k, errs[k]); });
+    var n = Object.keys(errs).length, box = $('form-errors');
+    box.hidden = !n;
+    box.textContent = n === 1 ? 'Please fix the highlighted field.' : 'Please fix the ' + n + ' highlighted fields.';
+  }
+
+  function updateHints() {
+    var d = readForm();
+    $('time-hint').textContent = AGS.isOvernight(d.startTime, d.endTime) ? 'Overnight shift: ends the next day.' : '';
+    $('urgent-note').hidden = !(d.eventDate && AGS.isUrgent(d.eventDate, d.startTime, new Date()));
+  }
+
+  // Re-check a field once it has been flagged, so errors clear as soon as they're fixed.
+  form.addEventListener('input', function (ev) {
+    updateHints();
+    var k = ev.target.name;
+    if (FIELDS.indexOf(k) < 0) return;
+    var el = $(k);
+    if (el.getAttribute('aria-invalid') === 'true' || (k === 'endTime' || k === 'startTime')) {
+      var errs = AGS.validate(readForm(), new Date());
+      if (el.getAttribute('aria-invalid') === 'true') setError(k, errs[k]);
+      if (k === 'startTime' && $('endTime').getAttribute('aria-invalid') === 'true') setError('endTime', errs.endTime);
+    }
+  });
+
+  form.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var d = readForm();
+    if (d.website) { showSuccess(d); return; } // bot: pretend it worked, send nothing
+    var errs = AGS.validate(d, new Date());
+    showErrors(errs);
+    var first = FIELDS.filter(function (k) { return errs[k]; })[0];
+    if (first) {
+      var el = first === 'securityType' ? form.querySelector('[name=securityType]') : $(first);
+      el.focus();
+      return;
+    }
+    d.requestId = window.crypto && crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
+    showSuccess(d);
+    send(d);
+  });
+
+  function showSuccess(d) {
+    var rows = [
+      ['Organization', d.organization],
+      ['Contact', d.contact],
+      ['When', AGS.formatHours(d.eventDate, d.startTime, d.endTime)],
+      ['Where', d.location],
+      ['Security', d.securityType.join(', ')],
+      ['Guards', d.guards || 'Not sure yet']
+    ];
+    var dl = $('summary');
+    dl.textContent = '';
+    rows.forEach(function (r) {
+      var dt = document.createElement('dt'), dd = document.createElement('dd');
+      dt.textContent = r[0]; dd.textContent = r[1];
+      dl.appendChild(dt); dl.appendChild(dd);
+    });
+    card.hidden = true;
+    success.hidden = false;
+    window.scrollTo(0, 0);
+    $('success-title').focus();
+  }
+
+  function setStatus(state) {
+    var el = $('send-status');
+    el.className = 'status' + (state === 'ok' ? ' ok' : '');
+    el.textContent = {
+      sending: 'Sending to the AGS team…',
+      ok: '✓ Received by our team.',
+      demo: 'Demo mode: this page is not connected to the request sheet yet.',
+      failed: ''
+    }[state];
+    $('send-failed').hidden = state !== 'failed';
+  }
+
+  function send(d) {
+    lastPayload = d;
+    setStatus('sending');
+    if (!/^https:\/\//.test(SCRIPT_URL)) { setStatus('demo'); return; }
+    var body = new URLSearchParams();
+    ['email', 'phone', 'organization', 'contact', 'location', 'eventDate', 'startTime', 'endTime', 'guards', 'details', 'requestId']
+      .forEach(function (k) { body.append(k, d[k] || ''); });
+    body.append('securityType', d.securityType.join(', '));
+    var ctrl = new AbortController();
+    var timer = setTimeout(function () { ctrl.abort(); }, TIMEOUT_MS);
+    fetch(SCRIPT_URL, { method: 'POST', body: body, signal: ctrl.signal })
+      .then(function (r) { return r.text(); })
+      .then(function (t) { if (t.trim() !== 'ok') throw new Error(t); if (lastPayload === d) setStatus('ok'); })
+      .catch(function () { if (lastPayload === d) setStatus('failed'); })
+      .then(function () { clearTimeout(timer); });
+  }
+
+  $('retry').addEventListener('click', function () { if (lastPayload) send(lastPayload); });
+
+  $('another').addEventListener('click', function () {
+    lastPayload = null;
+    form.reset();
+    showErrors({});
+    updateHints();
+    success.hidden = true;
+    card.hidden = false;
+    window.scrollTo(0, 0);
+    $('email').focus();
+  });
+})();
+</script>
+</body>
+</html>
